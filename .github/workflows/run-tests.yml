@@ -1,67 +1,67 @@
 name: Run Tests
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    test-api:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                python-version: ['3.12', '3.13', '3.14']
+  test-api:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13', '3.14']
 
-        steps:
-          - uses: actions/checkout@v7
+    steps:
+      - uses: actions/checkout@v7
 
-          - name: Setup Python environment
-            id: seed
-            uses: ./.github/actions/setup-python-env
-            with:
-                python-version: ${{ matrix.python-version }}
-                database-path: app/server/test_dogshelter.db
+      - name: Setup Python environment
+        id: seed
+        uses: ./.github/actions/setup-python-env
+        with:
+          python-version: ${{ matrix.python-version }}
+          database-path: app/server/test_dogshelter.db
 
-          - name: Run tests
-            run: python -m unittest test_app -v
-            working-directory: ./app/server
-            env:
-                DATABASE_PATH: ${{ steps.seed.outputs.database-file }}
-            
-        
-    test-e2e:
-        runs-on: ubuntu-latest
+      - name: Run tests
+        run: python -m unittest test_app -v
+        working-directory: ./app/server
+        env:
+          DATABASE_PATH: ${{ steps.seed.outputs.database-file }}
 
-        steps:
-          - uses: actions/checkout@v7
+  test-e2e:
+    runs-on: ubuntu-latest
 
-          - name: Setup Python environment
-            id: seed
-            uses: ./.github/actions/setup-python-env
-            with:
-                database-path: app/server/test_dogshelter.db
+    steps:
+      - uses: actions/checkout@v7
 
-          - name: Set up Node.js
-            uses: actions/setup-node@v7
-            with:
-              node-version: '24'
-              cache: 'npm'
-              cache-dependency-path: './app/client/package-lock.json'
+      - name: Setup Python environment
+        id: seed
+        uses: ./.github/actions/setup-python-env
+        with:
+          database-path: app/server/test_dogshelter.db
 
-          - name: Install Node dependencies
-            working-directory: ./app/client
-            run: npm ci
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'app/client/package-lock.json'
 
-          - name: Install Playwright browsers
-            working-directory: ./app/client
-            run: npx playwright install --with-deps chromium
+      - name: Install Node dependencies
+        working-directory: ./app/client
+        run: npm ci
 
-          - name: Run e2e tests
-            working-directory: ./app/client
-            run: npx playwright test
-            env:
-                DATABASE_PATH: ${{ steps.seed.outputs.database-file }}
+      - name: Install Playwright browsers
+        working-directory: ./app/client
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        working-directory: ./app/client
+        run: npx playwright test
+        env:
+          DATABASE_PATH: ${{ steps.seed.outputs.database-file }}
